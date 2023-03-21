@@ -24,6 +24,10 @@ param (
     [string]$OutputDirectory
 )
 
+if($verbose) {
+
+  $VerbosePreference = "continue" }
+
 # Login to Azure
 Connect-AzAccount
 
@@ -36,7 +40,7 @@ $allRoleAssignments = @()
 # Initialize an empty array to store the role assignments for the current subscription
 $subscriptionRoleAssignments = @()
 
-Write-Verbose "Running for all subscriptions in Tenant" -Verbose
+Write-Output "Running for all subscriptions in Tenant" 
 $Subscriptions = Get-AzSubscription -TenantId $CurrentContext.Tenant.Id
 
 # Loop through all subscriptions in the tenant
@@ -45,7 +49,9 @@ foreach ($subscription in $Subscriptions) {
     Set-AzContext -Subscription $subscription.Id
 
     # Get all role assignments at the subscription level
-    Write-Verbose "Changing to Subscription $($Subscription.Name)" -Verbose
+
+        Write-Verbose "Getting role assignments for subscription $($subscription.Name)"
+
     $roleAssignments = Get-AzRoleAssignment -Scope /subscriptions/$($subscription.Id) | Where-Object { $_.Scope -eq "/subscriptions/$($subscription.Id)" }
 
     # Add the role assignments to the array and reorder the columns
@@ -75,4 +81,4 @@ foreach ($subscriptionName in $allRoleAssignments.Keys) {
 }
 
 # Write verbose output
-Write-Verbose "Role assignments at the resource group level for all subscriptions in the current tenant written to $($outputFile)..." -Verbose
+Write-Output "Role assignments at the resource group level for all subscriptions in the current tenant written to $($outputFile)..."

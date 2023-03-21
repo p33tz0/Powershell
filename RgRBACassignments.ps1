@@ -24,6 +24,11 @@ param (
     [string]$OutputDirectory
 )
 
+if($verbose) {
+
+    $VerbosePreference = "continue" }
+
+
 # Login to Azure
 Connect-AzAccount
 
@@ -32,7 +37,7 @@ $CurrentContext = Get-AzContext
 # Initialize an empty hashtable to store the role assignments for each subscription
 $allRoleAssignments = @{}
 
-Write-Verbose "Running for all subscriptions in Tenant" -Verbose
+Write-Output "Running for all subscriptions in Tenant" 
 $Subscriptions = Get-AzSubscription -TenantId $CurrentContext.Tenant.Id
 
 # Loop through all subscriptions in the tenant
@@ -41,6 +46,8 @@ foreach ($subscription in $Subscriptions) {
     Set-AzContext -Subscription $subscription.Id
 
     Write-Verbose "Running for subscription $($subscription.Name)" -Verbose
+
+    
 
     # Get all resource groups in the current subscription
     $ResourceGroups = Get-AzResourceGroup
@@ -51,7 +58,7 @@ foreach ($subscription in $Subscriptions) {
     # Loop through all resource groups in the subscription
     foreach ($resourceGroup in $ResourceGroups) {
         # Get all role assignments at the resource group level
-        Write-Verbose "Getting role assignments for resource group $($resourceGroup.ResourceGroupName)" -Verbose
+        Write-Verbose "Getting role assignments for resource group $($resourceGroup.ResourceGroupName)" 
         $roleAssignments = Get-AzRoleAssignment -Scope /subscriptions/$($subscription.Id)/resourceGroups/$($resourceGroup.ResourceGroupName) | Where-Object { $_.Scope -eq "/subscriptions/$($subscription.Id)/resourceGroups/$($resourceGroup.ResourceGroupName)" }
 
         # Add the role assignments to the array and reorder the columns
@@ -84,5 +91,5 @@ foreach ($subscriptionName in $allRoleAssignments.Keys) {
     $subscriptionRoleAssignments | Export-Excel -Path $outputFile -WorksheetName $subscriptionName -TableName $subscriptionName -AutoSize -BoldTopRow
 }
 
-# Write verbose output
-Write-Verbose "Role assignments at the resource group level for all subscriptions in the current tenant written to $($outputFile)..." -Verbose
+# Write output
+Write-Output "Role assignments at the resource group level for all subscriptions in the current tenant written to $($outputFile)..."
