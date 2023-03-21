@@ -32,6 +32,10 @@ $CurrentContext = Get-AzContext
 # Initialize an empty array to store the role assignments
 $allRoleAssignments = @()
 
+
+# Initialize an empty array to store the role assignments for the current subscription
+$subscriptionRoleAssignments = @()
+
 Write-Verbose "Running for all subscriptions in Tenant" -Verbose
 $Subscriptions = Get-AzSubscription -TenantId $CurrentContext.Tenant.Id
 
@@ -45,7 +49,7 @@ foreach ($subscription in $Subscriptions) {
     $roleAssignments = Get-AzRoleAssignment -Scope /subscriptions/$($subscription.Id) | Where-Object { $_.Scope -eq "/subscriptions/$($subscription.Id)" }
 
     # Add the role assignments to the array and reorder the columns
-    $allRoleAssignments += foreach ($roleAssignment in $roleAssignments) {
+    $subscriptionRoleAssignments += foreach ($roleAssignment in $roleAssignments) {
         [pscustomobject]@{
             DisplayName = $roleAssignment.DisplayName
             RoleDefinitionName = $roleAssignment.RoleDefinitionName
@@ -57,10 +61,18 @@ foreach ($subscription in $Subscriptions) {
             RoleAssignmentName = $roleAssignment.RoleAssignmentName
         }
     }
+        # Add the subscription's role assignments to the hashtable
+        $allRoleAssignments += @{$subscription.Name = $subscriptionRoleAssignments}
+
+}
+# Create a new Excel file and add a worksheet for each subscription's role assignments
+$outputFile = Join-Path $OutputDirectory "sub_role_assignments.xlsx"
+
+foreach ($subscriptionName in $allRoleAssignments.Keys) {
+    $subscriptionRoleAssignments = $allRoleAssignments.$subscriptionName
+
+    $subscriptionRoleAssignments | Export-Excel -Path $outputFile -WorksheetName $subscriptionName -TableName $subscriptionName -AutoSize -BoldTopRow
 }
 
-$outputFile = Join-Path $OutputDirectory "role_assignments.xlsx"
-$allRoleAssignments | Export-Excel -Path $outputFile -AutoSize
-
 # Write verbose output
-Write-Verbose "Role assignments at the subscription level written to $($outputFile)..." -Verbose
+Write-Verbose "Role assignments at the resource group level for all subscriptions in the current tenant written to $($outputFile)..." -Verbose
